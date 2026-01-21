@@ -16,15 +16,6 @@
     <Filter Include="common">
       <UniqueIdentifier>{d0caea1e-86ca-450d-bda2-3c6c13f10bd0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ctrl">
-      <UniqueIdentifier>{8a5c248d-6d5c-4181-bd60-0e0212638b75}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ctrl\GridCtrl">
-      <UniqueIdentifier>{548baf78-27ee-4fc2-96e2-996b726d5983}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ctrl\GridCtrl\NewCellTypes">
-      <UniqueIdentifier>{41486300-0703-4240-b60e-a8aa13680199}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Emulator.h">
@@ -57,36 +48,6 @@
     <ClInclude Include="common\WinIniParser.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="ctrl\NumEditEx.h">
-      <Filter>ctrl</Filter>
-    </ClInclude>
-    <ClInclude Include="ctrl\GridCtrl\GridCtrl.h">
-      <Filter>ctrl\GridCtrl</Filter>
-    </ClInclude>
-    <ClInclude Include="ctrl\GridCtrl\MemDC.h">
-      <Filter>ctrl\GridCtrl</Filter>
-    </ClInclude>
-    <ClInclude Include="ctrl\GridCtrl\CellRange.h">
-      <Filter>ctrl\GridCtrl</Filter>
-    </ClInclude>
-    <ClInclude Include="ctrl\GridCtrl\GridCell.h">
-      <Filter>ctrl\GridCtrl</Filter>
-    </ClInclude>
-    <ClInclude Include="ctrl\GridCtrl\NewCellTypes\GridCellCombo.h">
-      <Filter>ctrl\GridCtrl\NewCellTypes</Filter>
-    </ClInclude>
-    <ClInclude Include="ctrl\GridCtrl\GridCellBase.h">
-      <Filter>ctrl\GridCtrl</Filter>
-    </ClInclude>
-    <ClInclude Include="ctrl\GridCtrl\InPlaceEdit.h">
-      <Filter>ctrl\GridCtrl</Filter>
-    </ClInclude>
-    <ClInclude Include="ctrl\GridCtrl\TitleTip.h">
-      <Filter>ctrl\GridCtrl</Filter>
-    </ClInclude>
-    <ClInclude Include="ctrl\GridCtrl\GridDropTarget.h">
-      <Filter>ctrl\GridCtrl</Filter>
-    </ClInclude>
     <ClInclude Include="CPOCOReactorServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -118,30 +79,6 @@
     </ClCompile>
     <ClCompile Include="common\WinIniParser.cpp">
       <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="ctrl\NumEditEx.cpp">
-      <Filter>ctrl</Filter>
-    </ClCompile>
-    <ClCompile Include="ctrl\GridCtrl\GridCtrl.cpp">
-      <Filter>ctrl\GridCtrl</Filter>
-    </ClCompile>
-    <ClCompile Include="ctrl\GridCtrl\GridCell.cpp">
-      <Filter>ctrl\GridCtrl</Filter>
-    </ClCompile>
-    <ClCompile Include="ctrl\GridCtrl\NewCellTypes\GridCellCombo.cpp">
-      <Filter>ctrl\GridCtrl\NewCellTypes</Filter>
-    </ClCompile>
-    <ClCompile Include="ctrl\GridCtrl\GridCellBase.cpp">
-      <Filter>ctrl\GridCtrl</Filter>
-    </ClCompile>
-    <ClCompile Include="ctrl\GridCtrl\InPlaceEdit.cpp">
-      <Filter>ctrl\GridCtrl</Filter>
-    </ClCompile>
-    <ClCompile Include="ctrl\GridCtrl\TitleTip.cpp">
-      <Filter>ctrl\GridCtrl</Filter>
-    </ClCompile>
-    <ClCompile Include="ctrl\GridCtrl\GridDropTarget.cpp">
-      <Filter>ctrl\GridCtrl</Filter>
     </ClCompile>
     <ClCompile Include="CPOCOReactorServer.cpp">
       <Filter>Source Files</Filter>

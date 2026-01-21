@@ -197,16 +197,6 @@
     <ClInclude Include="CPOCOReactorClient.h" />
     <ClInclude Include="CPOCOReactorServer.h" />
     <ClInclude Include="CPOCOSelectServer.h" />
-    <ClInclude Include="ctrl\GridCtrl\CellRange.h" />
-    <ClInclude Include="ctrl\GridCtrl\GridCell.h" />
-    <ClInclude Include="ctrl\GridCtrl\GridCellBase.h" />
-    <ClInclude Include="ctrl\GridCtrl\GridCtrl.h" />
-    <ClInclude Include="ctrl\GridCtrl\GridDropTarget.h" />
-    <ClInclude Include="ctrl\GridCtrl\InPlaceEdit.h" />
-    <ClInclude Include="ctrl\GridCtrl\MemDC.h" />
-    <ClInclude Include="ctrl\GridCtrl\NewCellTypes\GridCellCombo.h" />
-    <ClInclude Include="ctrl\GridCtrl\TitleTip.h" />
-    <ClInclude Include="ctrl\NumEditEx.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
@@ -222,14 +212,6 @@
     <ClCompile Include="CPOCOReactorClient.cpp" />
     <ClCompile Include="CPOCOReactorServer.cpp" />
     <ClCompile Include="CPOCOSelectServer.cpp" />
-    <ClCompile Include="ctrl\GridCtrl\GridCell.cpp" />
-    <ClCompile Include="ctrl\GridCtrl\GridCellBase.cpp" />
-    <ClCompile Include="ctrl\GridCtrl\GridCtrl.cpp" />
-    <ClCompile Include="ctrl\GridCtrl\GridDropTarget.cpp" />
-    <ClCompile Include="ctrl\GridCtrl\InPlaceEdit.cpp" />
-    <ClCompile Include="ctrl\GridCtrl\NewCellTypes\GridCellCombo.cpp" />
-    <ClCompile Include="ctrl\GridCtrl\TitleTip.cpp" />
-    <ClCompile Include="ctrl\NumEditEx.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
