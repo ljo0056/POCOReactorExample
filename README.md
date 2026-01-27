@@ -3,7 +3,7 @@
 POCO reactor echo server and client
 
 # IDE
-Visual Studio 2019 MFC
+Visual Studio 2022 MFC
 
 # Reference Library
 plog
