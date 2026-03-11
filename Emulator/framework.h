@@ -7,6 +7,7 @@
 #include "targetver.h"
 
 #define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS      // some CString constructors will be explicit
+//#define _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS    // for fmt library
 
 // turns off MFC's hiding of some common and often safely ignored warning messages
 #define _AFX_ALL_WARNINGS

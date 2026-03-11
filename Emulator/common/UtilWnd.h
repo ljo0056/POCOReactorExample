@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 
 ///  @author  Lee Jong Oh
 ///  @brief   윈도우 유틸리티 용으로 사용되는 api 모듬

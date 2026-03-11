@@ -20,10 +20,25 @@
 #define IDC_CHECK1                      1009
 #define IDC_EDIT_IP                     1009
 #define IDC_EDIT_IP2                    1009
+#define IDC_ALARM                       1009
 #define IDC_TEMP_CAP3                   1010
 #define IDC_VIAL                        1010
 #define IDC_ACTIVATE2                   1010
+#define IDC_STATIC_STATUS               1010
 #define IDC_EDIT_PORT2                  1011
+#define IDC_EDIT_FW                     1011
+#define IDC_EDIT_CONNECTION             1012
+#define IDC_COMBO_TYPE_OF_SAMPLER       1013
+#define IDC_EDIT_SN                     1014
+#define IDC_RESET                       1015
+#define IDC_COMBO_SYRINGE_TYPE          1016
+#define IDC_EDIT_INJECTORS              1017
+#define IDC_EDIT_TRAY                   1018
+#define IDC_EDIT_VIAL                   1019
+#define IDC_EDIT_BARCODE                1020
+#define IDC_EDIT_SYRINGE_ID             1021
+#define IDC_COMBO_TYPE_OF_SAMPLER2      1022
+#define IDC_COMBO_ERROR                 1022
 #define ID_MENU_ADDROW                  32769
 #define ID_MENU_CHANGEROW               32770
 #define ID_MENU_DELETEROW               32771
@@ -33,9 +48,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        132
+#define _APS_NEXT_RESOURCE_VALUE        134
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1010
+#define _APS_NEXT_CONTROL_VALUE         1014
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

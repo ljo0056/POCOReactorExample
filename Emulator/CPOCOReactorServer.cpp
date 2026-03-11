@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "CPOCOReactorServer.h"
+#include "CPOCOServerHandler.h"
 
 #include <Poco/Net/SocketReactor.h>
 #include <Poco/Net/StreamSocket.h>
@@ -44,13 +45,7 @@ public:
         m_reactor.removeEventHandler(m_socket, Poco::Observer<ServerSession, Poco::Net::ShutdownNotification>(*this, &ServerSession::onShutdown));
         m_reactor.removeEventHandler(m_socket, Poco::Observer<ServerSession, Poco::Net::ErrorNotification>(*this, &ServerSession::onError));
         //m_reactor.removeEventHandler(m_socket, Poco::Observer<ServerSession, Poco::Net::IdleNotification>(*this, &ServerSession::onIdle));
-        //m_reactor.removeEventHandler(m_socket, Poco::Observer<ServerSession, Poco::Net::TimeoutNotification>(*this, &ServerSession::onTimeout));        
-
-        if (nullptr != m_service)
-        {
-            delete m_service;
-            m_service = nullptr;
-        }
+        //m_reactor.removeEventHandler(m_socket, Poco::Observer<ServerSession, Poco::Net::TimeoutNotification>(*this, &ServerSession::onTimeout));
 
         if (nullptr != m_buffer)
         {
@@ -66,10 +61,10 @@ public:
 
     void close()
     {
-        m_socket.close();
-
         if (nullptr != m_service)
-            m_service->onDisconnect();
+            m_service->onDisconnect(&m_socket);
+
+        m_socket.close();        
 
         delete this;
     }
@@ -78,25 +73,24 @@ public:
     {
         m_service = service;        
         if (m_service)
-            m_service->onConnect();
+            m_service->onConnect(&m_socket);
     }
 
     void onWritable(Poco::Net::WritableNotification* pNf)
     {
-        pNf->release();
+        pNf->release();        
     }
 
     void onReadable(Poco::Net::ReadableNotification* pNf)
     {
-        pNf->release();
-
+        pNf->release();        
         try
         {
             int n = m_socket.receiveBytes(m_buffer, m_buffer_len);            
             if (n > 0)
             {
                 if (m_service)
-                    m_service->onReadable(m_buffer, n);
+                    m_service->onReadable(&m_socket, m_buffer, n);
             }
             else
             {
@@ -117,7 +111,7 @@ public:
         pNf->release();        
 
         if (m_service)
-            m_service->onShutdown();
+            m_service->onShutdown(&m_socket);
 
         close();
     }
@@ -128,7 +122,7 @@ public:
         LOGI << fmt::format("onError from[{}]", m_peer_address);
 
         if (m_service)
-            m_service->onError();
+            m_service->onError(&m_socket);
 
         close();
     }
@@ -153,76 +147,31 @@ private:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
-/// class CPOCOServerHandler
-
-CPOCOServerHandler::CPOCOServerHandler(Poco::Net::StreamSocket& socket)
-    : m_socket(socket)
-{
-}
-
-CPOCOServerHandler::~CPOCOServerHandler()
-{
-}
-
-////////////////////////////////////////////////////////////////////////////////////////
-/// class CPOCOEchoHandler
-
-CPOCOServerEchoHandler::CPOCOServerEchoHandler(Poco::Net::StreamSocket& socket)
-    : CPOCOServerHandler(socket)
-{
-}
-
-CPOCOServerEchoHandler::~CPOCOServerEchoHandler()
-{
-}
-
-void CPOCOServerEchoHandler::onConnect()
-{
-
-}
-
-void CPOCOServerEchoHandler::onDisconnect()
-{
-
-}
-
-void CPOCOServerEchoHandler::onReadable(byte* buffer, int length)
-{
-    socket().sendBytes(buffer, length);
-}
-
-void CPOCOServerEchoHandler::onShutdown()
-{
-}
-
-void CPOCOServerEchoHandler::onError()
-{
-}
-
-////////////////////////////////////////////////////////////////////////////////////////
 /// class CPOCOServerAcceptor
 
 class CPOCOServerAcceptor : public Poco::Net::SocketAcceptor<ServerSession>
 {
 public:
-    CPOCOServerAcceptor(Poco::Net::ServerSocket& socket, Poco::Net::SocketReactor& reactor,
-        std::function<CPOCOServerHandler* (Poco::Net::StreamSocket& socket)> creator)
+    CPOCOServerAcceptor(Poco::Net::ServerSocket& socket, Poco::Net::SocketReactor& reactor, CPOCOServerHandler* handler)
         : Poco::Net::SocketAcceptor<ServerSession>(socket, reactor)
-        , m_creator(creator)
+        , m_handler(handler)
+        , m_count(0)
     {
+    }
+    ~CPOCOServerAcceptor()
+    {    
     }
 
     virtual ServerSession* createServiceHandler(Poco::Net::StreamSocket& socket)
-    {        
+    {
         ServerSession* session = new ServerSession(socket, *reactor());
-        CPOCOServerHandler* service = m_creator(session->socket());
-        session->SetService(service);
-
+        session->SetService(m_handler);
         return session;
     }
 
-public:
-    std::function<CPOCOServerHandler* (Poco::Net::StreamSocket&)> m_creator;
+private:
+    CPOCOServerHandler* m_handler;
+    int                 m_count;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -230,7 +179,7 @@ public:
 
 CPOCOReactorServer::CPOCOReactorServer()
 {
-    m_port = 4240;
+    m_port = 20101;
     m_thread_running = false;
 }
 
@@ -240,24 +189,22 @@ CPOCOReactorServer::~CPOCOReactorServer()
 }
 
 bool CPOCOReactorServer::Activate(int port)
-{
-    std::function<CPOCOServerHandler* (Poco::Net::StreamSocket&)> echo_session = [](Poco::Net::StreamSocket& socket)
-    {
-        return new CPOCOServerEchoHandler(socket);
-    };
-
-    return Activate(port, echo_session);
+{    
+    return Activate(port, new CPOCOServerEchoHandler());
 }
 
-bool CPOCOReactorServer::Activate(int port, std::function<CPOCOServerHandler* (Poco::Net::StreamSocket&)> creator)
+bool CPOCOReactorServer::Activate(int port, CPOCOServerHandler* handler)
 {
-    LOGI << fmt::format("POCO Reactor Server Activate Port[{}]", port);
+    LOGI_AFL << fmt::format("POCO Reactor Server Activate Port[{}]", port);
 
     if (true == m_thread_running)
         return false;
 
+    if (nullptr == handler)
+        handler = new CPOCOServerEchoHandler();
+
     m_port = port;
-    m_creator = creator;
+    m_handler = handler;
 
     if (m_thread.joinable())
         m_thread.join();
@@ -274,7 +221,7 @@ bool CPOCOReactorServer::Activate(int port, std::function<CPOCOServerHandler* (P
 
 bool CPOCOReactorServer::Deactivate()
 {
-    LOGI << fmt::format("POCO Reactor Server Deactivate Port[{}]", m_port);
+    LOGI_AFL << fmt::format("POCO Reactor Server Deactivate Port[{}]", m_port);
 
     if (m_reactor)
         m_reactor->stop();
@@ -287,14 +234,15 @@ bool CPOCOReactorServer::Deactivate()
 
 void CPOCOReactorServer::ThreadLoop()
 {
-    LOGI << fmt::format("POCO Reactor Server Thread Start");
+    LOGI_AFL << fmt::format("POCO Reactor Server Thread");
 
     try
-    {
-        Poco::Timespan timeout(10, 0);
-        m_reactor = std::make_unique<Poco::Net::SocketReactor>(timeout);
+    {        
+        m_reactor = std::make_unique<Poco::Net::SocketReactor>();
+        //Poco::Timespan timeout(10, 0);
+        //m_reactor->setTimeout(timeout);
         m_server_socket = std::make_unique<Poco::Net::ServerSocket>(m_port);
-        m_acceptor = std::make_unique<CPOCOServerAcceptor>(*m_server_socket, *m_reactor, m_creator);
+        m_acceptor = std::make_unique<CPOCOServerAcceptor>(*m_server_socket, *m_reactor, m_handler);
 
         m_reactor->run();
     }
@@ -306,6 +254,4 @@ void CPOCOReactorServer::ThreadLoop()
     m_acceptor.reset();
     m_reactor.reset();
     m_server_socket.reset();
-
-    LOGI << fmt::format("POCO Reactor Server Thread End");
 }

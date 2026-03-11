@@ -16,6 +16,9 @@
     <Filter Include="common">
       <UniqueIdentifier>{d0caea1e-86ca-450d-bda2-3c6c13f10bd0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="HT3X00AS">
+      <UniqueIdentifier>{00fb1d87-c057-45b5-888a-0d7a0838bde1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Emulator.h">
@@ -36,9 +39,6 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CPOCOSelectServer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="common\Util.h">
       <Filter>common</Filter>
     </ClInclude>
@@ -51,10 +51,43 @@
     <ClInclude Include="CPOCOReactorServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CPOCOReactorClient.h">
+    <ClInclude Include="common\InnerThread.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="SettingIni.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="common\InnerThread.h">
+    <ClInclude Include="HT3X00AsManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CPOCOServerHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HT3X00AS\XHt3000AsPacket.h">
+      <Filter>HT3X00AS</Filter>
+    </ClInclude>
+    <ClInclude Include="HT3X00AS\XHt3000AsInform.h">
+      <Filter>HT3X00AS</Filter>
+    </ClInclude>
+    <ClInclude Include="HT3X00AS\XHt3000AsConfig.h">
+      <Filter>HT3X00AS</Filter>
+    </ClInclude>
+    <ClInclude Include="HT3X00AS\XHt3000AsSetup.h">
+      <Filter>HT3X00AS</Filter>
+    </ClInclude>
+    <ClInclude Include="HT3X00AS\XHt3000AsState.h">
+      <Filter>HT3X00AS</Filter>
+    </ClInclude>
+    <ClInclude Include="common\RepeatWorkProc.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\Locker.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\TimerLockerManager.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\TimerEx.h">
       <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
@@ -66,9 +99,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CPOCOSelectServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="common\Util.cpp">
@@ -83,10 +113,43 @@
     <ClCompile Include="CPOCOReactorServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CPOCOReactorClient.cpp">
+    <ClCompile Include="common\InnerThread.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="SettingIni.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="common\InnerThread.cpp">
+    <ClCompile Include="HT3X00AsManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CPOCOServerHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HT3X00AS\XHt3000AsPacket.cpp">
+      <Filter>HT3X00AS</Filter>
+    </ClCompile>
+    <ClCompile Include="HT3X00AS\XHt3000AsInform.cpp">
+      <Filter>HT3X00AS</Filter>
+    </ClCompile>
+    <ClCompile Include="HT3X00AS\XHt3000AsConfig.cpp">
+      <Filter>HT3X00AS</Filter>
+    </ClCompile>
+    <ClCompile Include="HT3X00AS\XHt3000AsSetup.cpp">
+      <Filter>HT3X00AS</Filter>
+    </ClCompile>
+    <ClCompile Include="HT3X00AS\XHt3000AsState.cpp">
+      <Filter>HT3X00AS</Filter>
+    </ClCompile>
+    <ClCompile Include="common\RepeatWorkProc.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\Locker.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\TimerLockerManager.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\TimerEx.cpp">
       <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>

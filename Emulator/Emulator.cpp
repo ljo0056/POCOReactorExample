@@ -6,12 +6,7 @@
 #include "framework.h"
 #include "Emulator.h"
 #include "EmulatorDlg.h"
-
-#include "common/Util.h"
-
-#include <plog/Custom/WinConsoleAppender.h>
-#include <plog/Custom/OneDayFileAppender.h>
-#include <plog/Appenders/DebugOutputAppender.h>
+#include "SettingIni.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -76,22 +71,9 @@ BOOL EmulatorApp::InitInstance()
 	// Change the registry key under which our settings are stored
 	// TODO: You should modify this string to be something appropriate
 	// such as the name of your company or organization
-	SetRegistryKey(_T("Local AppWizard-Generated Applications"));
-
-	plog::Logger<PLOG_DEFAULT_INSTANCE>& logger = plog::init(plog::verbose);
-	{
-		static plog::WinConsoleAppender<plog::TxtFormatter>  console_appender;
-		logger.addAppender(&console_appender);
-
-		std::string log_dir;
-		GetProcessPath(log_dir);
-		log_dir += "\\LOG";
-		static plog::OneDayFileAppender<plog::TxtFormatter>  onedayfile_appender(log_dir.c_str());
-		logger.addAppender(&onedayfile_appender);
-
-		static plog::DebugOutputAppender<plog::TxtFormatter> debugoutput_appender;
-		logger.addAppender(&debugoutput_appender);
-	}
+	SetRegistryKey(_T("Local AppWizard-Generated Applications"));	
+	
+	SettingIni::GetInstance();
 
 	EmulatorDlg dlg;
 	m_pMainWnd = &dlg;

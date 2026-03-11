@@ -19,25 +19,25 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <VCProjectVersion>16.0</VCProjectVersion>
+    <VCProjectVersion>17.0</VCProjectVersion>
     <ProjectGuid>{96505361-43CD-4EE9-99AE-C8213A0DD90F}</ProjectGuid>
     <Keyword>MFCProj</Keyword>
     <RootNamespace>Emulator</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>Emulator</ProjectName>
+    <ProjectName>HT3X00AS_Emulator</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
@@ -45,14 +45,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
@@ -189,35 +189,55 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="common\InnerThread.h" />
+    <ClInclude Include="common\Locker.h" />
+    <ClInclude Include="common\RepeatWorkProc.h" />
+    <ClInclude Include="common\TimerEx.h" />
+    <ClInclude Include="common\TimerLockerManager.h" />
+    <ClInclude Include="CPOCOServerHandler.h" />
     <ClInclude Include="Emulator.h" />
     <ClInclude Include="EmulatorDlg.h" />
     <ClInclude Include="common\Util.h" />
     <ClInclude Include="common\UtilWnd.h" />
     <ClInclude Include="common\WinIniParser.h" />
-    <ClInclude Include="CPOCOReactorClient.h" />
     <ClInclude Include="CPOCOReactorServer.h" />
-    <ClInclude Include="CPOCOSelectServer.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="HT3X00AsManager.h" />
+    <ClInclude Include="HT3X00AS\XHt3000AsConfig.h" />
+    <ClInclude Include="HT3X00AS\XHt3000AsInform.h" />
+    <ClInclude Include="HT3X00AS\XHt3000AsPacket.h" />
+    <ClInclude Include="HT3X00AS\XHt3000AsSetup.h" />
+    <ClInclude Include="HT3X00AS\XHt3000AsState.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="SettingIni.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common\InnerThread.cpp" />
+    <ClCompile Include="common\Locker.cpp" />
+    <ClCompile Include="common\RepeatWorkProc.cpp" />
+    <ClCompile Include="common\TimerEx.cpp" />
+    <ClCompile Include="common\TimerLockerManager.cpp" />
+    <ClCompile Include="CPOCOServerHandler.cpp" />
     <ClCompile Include="Emulator.cpp" />
     <ClCompile Include="EmulatorDlg.cpp" />
     <ClCompile Include="common\Util.cpp" />
     <ClCompile Include="common\UtilWnd.cpp" />
     <ClCompile Include="common\WinIniParser.cpp" />
-    <ClCompile Include="CPOCOReactorClient.cpp" />
     <ClCompile Include="CPOCOReactorServer.cpp" />
-    <ClCompile Include="CPOCOSelectServer.cpp" />
+    <ClCompile Include="HT3X00AsManager.cpp" />
+    <ClCompile Include="HT3X00AS\XHt3000AsConfig.cpp" />
+    <ClCompile Include="HT3X00AS\XHt3000AsInform.cpp" />
+    <ClCompile Include="HT3X00AS\XHt3000AsPacket.cpp" />
+    <ClCompile Include="HT3X00AS\XHt3000AsSetup.cpp" />
+    <ClCompile Include="HT3X00AS\XHt3000AsState.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="SettingIni.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Emulator.rc" />

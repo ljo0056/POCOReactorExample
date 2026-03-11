@@ -1,8 +1,9 @@
-#pragma once
+Ôªø#pragma once
 #include <thread>
 #include <memory>
 
 class CPOCOServerAcceptor;
+class CPOCOServerHandler;
 
 namespace Poco {
 	namespace Net {
@@ -12,42 +13,7 @@ namespace Poco {
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// class CPOCOServerHandler
-
-class CPOCOServerHandler
-{
-public:
-	CPOCOServerHandler(Poco::Net::StreamSocket& socket);
-	~CPOCOServerHandler();
-
-	Poco::Net::StreamSocket& socket()
-	{
-		return m_socket;
-	}
-
-	virtual void onConnect() = 0;
-	virtual void onDisconnect() = 0;	
-	virtual void onReadable(byte* buffer, int length) = 0;
-	virtual void onShutdown() = 0;
-	virtual void onError() = 0;	
-
-private:
-	Poco::Net::StreamSocket& m_socket;
-};
-
-class CPOCOServerEchoHandler : public CPOCOServerHandler
-{
-public:
-	CPOCOServerEchoHandler(Poco::Net::StreamSocket& socket);
-	~CPOCOServerEchoHandler();
-
-	virtual void onConnect();
-	virtual void onDisconnect();	
-	virtual void onReadable(byte* buffer, int length);
-	virtual void onShutdown();
-	virtual void onError();	
-};
+typedef Poco::Net::StreamSocket PocoSocket;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// class CPOCOReactorServer
@@ -58,8 +24,8 @@ public:
 	CPOCOReactorServer();
 	~CPOCOReactorServer();
 
-	bool Activate(int port);	// CPOCOEchoHandler µÓ∑œ
-	bool Activate(int port, std::function<CPOCOServerHandler* (Poco::Net::StreamSocket&)> creator);
+	bool Activate(int port);	// CPOCOEchoHandler Îì±Î°ù
+	bool Activate(int port, CPOCOServerHandler* handler);
 	bool Deactivate();
 
 private:	
@@ -71,7 +37,7 @@ private:
 	std::unique_ptr<Poco::Net::SocketReactor>    m_reactor;
 	std::unique_ptr<Poco::Net::ServerSocket>     m_server_socket;	
 	std::unique_ptr<CPOCOServerAcceptor>		 m_acceptor;
-	std::function<CPOCOServerHandler* (Poco::Net::StreamSocket&)> m_creator;
+	CPOCOServerHandler*                          m_handler;
 
 	std::thread m_thread;
 	std::atomic<bool> m_thread_running;
