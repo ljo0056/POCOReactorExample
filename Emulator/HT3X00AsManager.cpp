@@ -157,8 +157,6 @@ void HT3X00AsManager::ProcWork()
         while (m_thread_run == true)
         {
             WORK_INFO work_info;
-
-            // Lock
             {
                 std::lock_guard<std::recursive_mutex> lock(m_mutex);
                 if (m_works.empty())
