@@ -122,18 +122,20 @@ void RepeatWorkProc::ThreadLoop()
         
         while (m_queue_repeat_work.size())
         {
-            int work_type = 0;
+            int work_type = m_queue_repeat_work.front();
+            m_queue_repeat_work.pop();
+
+            RepeatWork func;
             {
                 std::lock_guard<std::recursive_mutex> lock(m_queue_repeat_mutex);
-                work_type = m_queue_repeat_work.front();
-                m_queue_repeat_work.pop();
-            }            
 
-            auto it = m_map_work.find(work_type);
-            if (it == m_map_work.end())
-                continue;
+                auto it = m_map_work.find(work_type);
+                if (it == m_map_work.end())
+                    continue;
 
-            RepeatWork& func = it->second;
+                func = it->second;
+            }
+
             if (func)
                 func();
         }
