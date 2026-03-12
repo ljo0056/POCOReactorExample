@@ -119,12 +119,15 @@ void RepeatWorkProc::ThreadLoop()
         m_queue_repeat_event.Wait();
         if (false == m_thread_running)
             break;
-
-        std::lock_guard<std::recursive_mutex> lock(m_queue_repeat_mutex);
+        
         while (m_queue_repeat_work.size())
         {
-            int work_type = m_queue_repeat_work.front();
-            m_queue_repeat_work.pop();
+            int work_type = 0;
+            {
+                std::lock_guard<std::recursive_mutex> lock(m_queue_repeat_mutex);
+                work_type = m_queue_repeat_work.front();
+                m_queue_repeat_work.pop();
+            }            
 
             auto it = m_map_work.find(work_type);
             if (it == m_map_work.end())
