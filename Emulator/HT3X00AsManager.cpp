@@ -71,13 +71,13 @@ int HT3X00AsManager::Deactivate()
 
     SetStatus3(XStatus1StandBy, Init, XStatus2None);
 
-    DeleteAllWork();
-
     m_thread_run = false;
     m_work_event.WakeUp();
 
     if (m_thread.joinable())
         m_thread.join();
+
+    DeleteAllWork();
 
     return 0;
 }
@@ -143,7 +143,6 @@ void HT3X00AsManager::AddWork(WORK_INFO& work_info)
 void HT3X00AsManager::DeleteAllWork()
 {
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
-
     m_works.clear();
 }
 
@@ -153,28 +152,25 @@ void HT3X00AsManager::ProcWork()
 
     do
     {
-        m_work_event.Wait();
-        //LOGI << fmt::format("Start wake up work thread... work count[{}]", m_works.size());
-
-        auto it = m_works.begin();
-        while (m_thread_run == true && it != m_works.end())
+        m_work_event.Wait();        
+                
+        while (m_thread_run == true)
         {
-            WORK_INFO& work_info = *it;
+            WORK_INFO work_info;
+
+            // Lock
+            {
+                std::lock_guard<std::recursive_mutex> lock(m_mutex);
+                if (m_works.empty())
+                    break;
+
+                work_info = m_works.front();
+                m_works.pop_front();
+            }
 
             if (work_info.work != nullptr)
-            {
                 work_info.work();
-                //LOGI << fmt::format("work was performed in thread... id[{}]", work_info.id);
-
-                // Lock
-                {
-                    std::lock_guard<std::recursive_mutex> lock(m_mutex);
-                    m_works.erase(it++);
-                }
-            }
-        }
-
-        //LOGI << fmt::format("End wake up work thread... work count[{}]", m_works.size());
+        }        
 
     } while (true == m_thread_run);
 
@@ -496,12 +492,14 @@ void HT3X00AsManager::OnSingleRunEx2(PocoSocket* socket, const ReadOnlySpan& slo
 
 void HT3X00AsManager::OnAbort(PocoSocket* socket, const ReadOnlySpan& slot)
 {
+    LOGI_AFL;
+
     std::string response;
     if (XHt3000AsPacketExtention::PerformAssemble(m_packet_state.get(), XHt3000CmdAbort, response) > 0)
     {
-        DeleteAllWork();
-
         socket->sendBytes((byte*)response.c_str(), (int)response.length());
+
+        DeleteAllWork();
 
         AddWork(WORK_ABORT_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 1000));
         AddWork(WORK_ABORT_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1AbortState, SingleAbortInject, XStatus2GcReady));
