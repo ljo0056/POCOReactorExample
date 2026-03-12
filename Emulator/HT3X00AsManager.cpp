@@ -13,18 +13,18 @@ HT3X00AsManager::HT3X00AsManager()
     : m_buffer_size(1024)
     , m_buffer(nullptr)
     , m_recv_len(0)
-{    
+{
     m_buffer = new byte[m_buffer_size];
     memset(m_buffer, 0, sizeof(byte) * m_buffer_size);
 
     m_packet_inform = std::make_unique<XHt3000AsInform>();
     m_packet_config = std::make_unique<XHt3000AsConfig>();
-    m_packet_setup  = std::make_unique<XHt3000AsSetup>();
-    m_packet_state  = std::make_unique<XHt3000AsState>();
+    m_packet_setup = std::make_unique<XHt3000AsSetup>();
+    m_packet_state = std::make_unique<XHt3000AsState>();
 
     m_command_name = XHt3000AsPacketExtention::CommandNameMap();
     m_status1_new_name = XHt3000AsPacketExtention::StatusNewCodeNameMap();
-    m_status1_name = XHt3000AsPacketExtention::StatusCodeNameMap();    
+    m_status1_name = XHt3000AsPacketExtention::StatusCodeNameMap();
 }
 
 HT3X00AsManager::~HT3X00AsManager()
@@ -48,17 +48,19 @@ int HT3X00AsManager::Activate(HWND hwnd)
 
     m_thread_run = true;
     m_thread = std::thread([this]()
-    {
-        ProcWork();
-    });
-    
+        {
+            ProcWork();
+        });
+
     auto activate_func = [this]()
-    {
-        m_packet_state->Reset();
-        SetStatus3(XStatus1StandBy, StandBy, XStatus2GcReady);
-        return 0;
-    };
-    AddWork(WORK_STANDBY, 1000 * 3, true, std::bind(activate_func));
+        {
+            m_packet_state->Reset();
+            SetStatus3(XStatus1StandBy, StandBy, XStatus2GcReady);
+            return 0;
+        };
+        
+    AddWork(WORK_ACTIVATE, std::bind(&HT3X00AsManager::Sleep, this, 3000));
+    AddWork(WORK_ACTIVATE, activate_func);
 
     return 0;
 }
@@ -67,10 +69,10 @@ int HT3X00AsManager::Deactivate()
 {
     LOGI_AFL;
 
-    SetStatus3(XStatus1StandBy, Init, XStatus2None);    
+    SetStatus3(XStatus1StandBy, Init, XStatus2None);
 
     DeleteAllWork();
-    
+
     m_thread_run = false;
     m_work_event.WakeUp();
 
@@ -92,30 +94,38 @@ int HT3X00AsManager::PostUpdateMessage()
     return 0;
 }
 
+int HT3X00AsManager::Sleep(int ms)
+{
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+    return 0;
+}
+
 void HT3X00AsManager::SetError(XHt3000Status1NewCode status1_new)
 {
+    LOGI_AFL;
+
     if (SingleMissingVial == status1_new)
     {
     }
     else if (StandBy == status1_new)
     {
-        AddWork(WORK_SINGLE_WAIT_GC4READY, 1000, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1StandBy, StandBy, XStatus2GcReady));
+        AddWork(WORK_ERROR, std::bind(&HT3X00AsManager::Sleep, this, 1000));
+        AddWork(WORK_ERROR, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1StandBy, StandBy, XStatus2GcReady));
     }
     else
     {
-        AddWork(WORK_SINGLE_WAIT_GC4READY, 1000, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1ErrorFind, status1_new, XStatus2InjectError));
+        AddWork(WORK_ERROR, std::bind(&HT3X00AsManager::Sleep, this, 1000));
+        AddWork(WORK_ERROR, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1ErrorFind, status1_new, XStatus2InjectError));
     }
 
     m_error = status1_new;
     LOGI << fmt::format("Set error - change old[{}] new[{}]", GetStatusNewName(m_packet_state->status1_new), GetStatusNewName(status1_new));
 }
 
-void HT3X00AsManager::AddWork(int id, int ms, bool call_once, const std::function<int(void)>& work)
+void HT3X00AsManager::AddWork(int id, const std::function<int(void)>& work)
 {
     WORK_INFO work_info;
     work_info.id = id;
-    work_info.ms = ms;
-    work_info.call_once = call_once;
     work_info.work = work;
     AddWork(work_info);
 }
@@ -125,11 +135,8 @@ void HT3X00AsManager::AddWork(WORK_INFO& work_info)
     if (false == m_thread_run)
         return;
 
-    std::lock_guard<std::recursive_mutex> lock(m_mutex);
-
-    work_info.check_time = std::chrono::high_resolution_clock::now();
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);    
     m_works.push_back(work_info);
-
     m_work_event.WakeUp();
 }
 
@@ -147,35 +154,27 @@ void HT3X00AsManager::ProcWork()
     do
     {
         m_work_event.Wait();
-        //LOGI << fmt::format("Start wake up work thread... work count[{}]", m_works.size());
-
-        std::lock_guard<std::recursive_mutex> lock(m_mutex);        
+        LOGI << fmt::format("Start wake up work thread... work count[{}]", m_works.size());
 
         auto it = m_works.begin();
         while (m_thread_run == true && it != m_works.end())
         {
-            bool perform = false;
             WORK_INFO& work_info = *it;
 
-            chrono_tp end = std::chrono::high_resolution_clock::now();
-            chrono_duration_milli elapsed = end - work_info.check_time;
-
-            if (work_info.ms <= elapsed.count() && work_info.work)
+            if (work_info.work != nullptr)
             {
                 work_info.work();
-                //LOGI << fmt::format("work was performed in thread... id[{}] ms[{}]", work_info.id, work_info.ms);
+                LOGI << fmt::format("work was performed in thread... id[{}]", work_info.id);
 
-                perform = true;
-                work_info.check_time = std::chrono::high_resolution_clock::now();
+                // Lock
+                {
+                    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+                    m_works.erase(it++);
+                }
             }
-
-            if (perform && work_info.call_once)
-                m_works.erase(it++);
-            else
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 
-        //LOGI << fmt::format("End wake up work thread... work count[{}]", m_works.size());
+        LOGI << fmt::format("End wake up work thread... work count[{}]", m_works.size());
 
     } while (true == m_thread_run);
 
@@ -193,7 +192,7 @@ void HT3X00AsManager::onDisconnect(PocoSocket* socket)
 }
 
 void HT3X00AsManager::onReadable(PocoSocket* socket, byte* buffer, int length)
-{    
+{
     if (length <= 0)
         return;
 
@@ -249,7 +248,7 @@ int HT3X00AsManager::SetStatus(XHt3000Status1Code status1)
 };
 
 int HT3X00AsManager::SetStatusNew(XHt3000Status1NewCode status1_new)
-{    
+{
     if (m_packet_state->status1_new != status1_new)
         LOGI << fmt::format("change old[{}] new[{}]", GetStatusNewName(m_packet_state->status1_new), GetStatusNewName(status1_new));
 
@@ -285,7 +284,7 @@ int HT3X00AsManager::SetStatus3(XHt3000Status1Code status1, XHt3000Status1NewCod
         LOGI << fmt::format("change old[{}] new[{}]", GetStatusNewName(m_packet_state->status1_new), GetStatusNewName(status1_new));
 
     if (m_packet_state->status2 != status2)
-        LOGI << fmt::format("change status_new[{}] old[{:08b}] new[{:08b}]", GetStatusNewName(status1_new), m_packet_state->status2, status2);    
+        LOGI << fmt::format("change status_new[{}] old[{:08b}] new[{:08b}]", GetStatusNewName(status1_new), m_packet_state->status2, status2);
 
     m_packet_state->status1 = status1;
     m_packet_state->status1_new = status1_new;
@@ -347,32 +346,32 @@ int HT3X00AsManager::Parse(PocoSocket* socket, byte* buffer, int length, int& fo
         case XHt3000CmdReadEthernet:
             OnPacketHandler(cmd, socket, m_packet_inform.get(), slot, cmd == XHt3000CmdReadInformation ? true : false);
             break;
-                    
+
         case XHt3000CmdReadBCR:
-        case XHt3000CmdReadRFID:        
+        case XHt3000CmdReadRFID:
         case XHt3000CmdReadSetupEx:
         case XHt3000CmdSetSetupEx:
         case XHt3000CmdReadSetupEx2:
         case XHt3000CmdSetSetupEx2:
             OnPacketHandler(cmd, socket, m_packet_config.get(), slot, true);
             break;
-                                                                
-        case XHt3000CmdReadMethod:        
+
+        case XHt3000CmdReadMethod:
         case XHt3000CmdWriteMethod:
         case XHt3000CmdReadMethodEx:
         case XHt3000CmdWriteMethodEx:
-            OnPacketHandler(cmd, socket, m_packet_setup.get(), slot, true);            
+            OnPacketHandler(cmd, socket, m_packet_setup.get(), slot, true);
             break;
 
         case XHt3000CmdReadSampler:
         case XHt3000CmdReadSamplerEx:
         case XHt3000CmdReadSamplerEx2:
             OnPacketHandler(cmd, socket, m_packet_state.get(), slot, false);
-            break;                    
-                            
+            break;
+
         case XHt3000CmdSingleRunEx2:
             OnSingleRunEx2(socket, slot);
-            break;                   
+            break;
         case XHt3000CmdAbort:
             OnAbort(socket, slot);
             break;
@@ -400,7 +399,7 @@ void HT3X00AsManager::onError(PocoSocket* socket)
 
 void HT3X00AsManager::OnPacketHandler(XHt3000PacketCommand cmd, PocoSocket* socket, XHt3000AsPacket* packet, const ReadOnlySpan& slot, bool log)
 {
-    XHt3000AsPacketExtention::PerformParse(packet, slot);    
+    XHt3000AsPacketExtention::PerformParse(packet, slot);
 
     std::string response;
     if (XHt3000AsPacketExtention::PerformAssemble(packet, cmd, response) > 0)
@@ -409,7 +408,7 @@ void HT3X00AsManager::OnPacketHandler(XHt3000PacketCommand cmd, PocoSocket* sock
             packet->PrintLog();
 
         socket->sendBytes((byte*)response.c_str(), (int)response.length());
-    }    
+    }
 }
 
 void HT3X00AsManager::OnSingleRunEx2(PocoSocket* socket, const ReadOnlySpan& slot)
@@ -428,97 +427,96 @@ void HT3X00AsManager::OnSingleRunEx2(PocoSocket* socket, const ReadOnlySpan& slo
 
     std::string response;
     if (XHt3000AsPacketExtention::PerformAssemble(m_packet_setup.get(), XHt3000CmdSingleRunEx2, response) > 0)
-    {        
+    {
         HT3X00AsManager::SetStatus3(XStatus1StandBy, StandBy, XStatus2GcReady);
         socket->sendBytes((byte*)response.c_str(), (int)response.length());
 
-        int ms = 100;
-        AddWork(WORK_SINGLE_WAIT_GC4READY, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1WaitGC, SingleWait4Ready, XStatus2GcReady));
+        auto reset_func = [this]()
+            {
+                m_packet_state->Reset();
+                return 0;
+            };        
 
-        ms += 600;
-        AddWork(WORK_SINGLE_DRAW_SAMPLE, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleDrawSample, XStatus2GcReady));
+        AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 1000));
+        AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1WaitGC, SingleWait4Ready, XStatus2GcReady));
+
+        AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 1000));
+        AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleDrawSample, XStatus2GcReady));
 
         if (SingleMissingVial == m_error)
         {
-            ms += 1000 * 5;
-            AddWork(WORK_SINGLE_DRAW_SAMPLE, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleDrawSample, XStatus2VialNotFound));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 5000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleDrawSample, XStatus2VialNotFound));
 
-            ms += 1000 * 5;
-            AddWork(WORK_SINGLE_RETURN_STANDBY, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleReturnStandby, XStatus2VialNotFound));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 5000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleReturnStandby, XStatus2VialNotFound));
 
-            ms += 1000 * 2;
-            AddWork(WORK_STANDBY, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1StandBy, StandBy, XStatus2None));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 2000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1StandBy, StandBy, XStatus2None));
 
-            ms += 500;
-            auto reset_func = [this]()
-                {
-                    m_packet_state->Reset();                    
-                    return 0;
-                };
-            AddWork(WORK_STANDBY, ms, true, std::bind(reset_func));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 1000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(reset_func));
 
             m_error = StandBy;
         }
         else
         {
-            ms += 1000 * 2;
-            AddWork(WORK_SINGLE_DRAW_SAMPLE, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleDrawSample, XStatus2VialFound | XStatus2GcReady));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 2000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleDrawSample, XStatus2VialFound | XStatus2GcReady));
 
-            ms += 1000 * 9;
-            AddWork(WORK_SINGLE_DRAW_SAMPLE, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleDrawSample, XStatus2VialFound | XStatus2GcReady));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 9000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleDrawSample, XStatus2VialFound | XStatus2GcReady));
 
-            ms += 1000 * 2;
-            AddWork(WORK_SINGLE_BUBBLE_REMOVE, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleBubbleRemove, XStatus2VialFound | XStatus2GcReady));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 2000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleBubbleRemove, XStatus2VialFound | XStatus2GcReady));
 
-            ms += 1000 * 9;
-            AddWork(WORK_SINGLE_DRAW_SAMPLE, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleDrawSample, XStatus2VialFound | XStatus2GcReady));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 9000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleDrawSample, XStatus2VialFound | XStatus2GcReady));
 
-            ms += 1000 * 6;
-            AddWork(WORK_SINGLE_INJECT_FRONT, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1PrepFront, SingleInjectFront, XStatus2VialFound));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 6000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1PrepFront, SingleInjectFront, XStatus2VialFound));
 
-            ms += 1000 * 20;
-            AddWork(WORK_SINGLE_EMIT_SAMPLE_INSTANT, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Trigger, SingleEmitSampleInstant, XStatus2VialFound));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 20000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Trigger, SingleEmitSampleInstant, XStatus2VialFound));
 
-            ms += 1000 * 2;
-            AddWork(WORK_SINGLE_INJECT_FRONT, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1PrepFront, SingleInjectFront, XStatus2VialFound));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 2000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1PrepFront, SingleInjectFront, XStatus2VialFound));
 
-            ms += 1000 * 7;
-            AddWork(WORK_SINGLE_RETURN_STANDBY, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleReturnStandby, XStatus2VialFound));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 7000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1Running, SingleReturnStandby, XStatus2VialFound));
 
-            ms += 1000 * 2;
-            AddWork(WORK_STANDBY, ms, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1StandBy, StandBy, XStatus2None));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 2000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1StandBy, StandBy, XStatus2None));
 
-            ms += 500;
-            auto reset_func = [this]()
-                {
-                    m_packet_state->Reset();
-                    return 0;
-                };
-            AddWork(WORK_STANDBY, ms, true, std::bind(reset_func));
-        }        
+            AddWork(WORK_SINGLE_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 1000));
+            AddWork(WORK_SINGLE_INJECT, std::bind(reset_func));
+        }
     }
 }
 
 void HT3X00AsManager::OnAbort(PocoSocket* socket, const ReadOnlySpan& slot)
-{    
+{
     std::string response;
     if (XHt3000AsPacketExtention::PerformAssemble(m_packet_state.get(), XHt3000CmdAbort, response) > 0)
     {
         DeleteAllWork();
-        
+
         socket->sendBytes((byte*)response.c_str(), (int)response.length());
-                                
-        AddWork(WORK_STANDBY, 1000 * 1, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1AbortState, SingleAbortInject, XStatus2GcReady));
-        AddWork(WORK_STANDBY, 1000 * 20, true, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1StandBy, StandBy, XStatus2GcReady));
-    }    
+
+        AddWork(WORK_ABORT_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 1000));
+        AddWork(WORK_ABORT_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1AbortState, SingleAbortInject, XStatus2GcReady));
+
+        AddWork(WORK_ABORT_INJECT, std::bind(&HT3X00AsManager::Sleep, this, 20000));
+        AddWork(WORK_ABORT_INJECT, std::bind(&HT3X00AsManager::SetStatus3, this, XStatus1StandBy, StandBy, XStatus2GcReady));
+    }
 }
 
 //////////////////////////////////////////////////////////////////
 
 void HT3X00AsManager_Test1()
 {
-    HT3X00AsManager manager;    
-    byte buffer0[] = 
+    HT3X00AsManager manager;
+    byte buffer0[] =
     {
         0x24, 0x31, 0x39, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x32, 0x34, 0x30, 0x30, 0x30, 0x30, 0x30, 0x31, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x41, 0x30, 0x30, 0x30, 0x31, 0x30, 0x31, 0x37, 0x45, 0x0D,
         0x24, 0x31, 0x38, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x31, 0x31, 0x36, 0x30, 0x30, 0x37, 0x39, 0x30, 0x30, 0x31, 0x34, 0x30, 0x31, 0x32, 0x43, 0x30, 0x32, 0x30, 0x30, 0x30, 0x33, 0x45, 0x38, 0x35, 0x39, 0x34, 0x46, 0x35, 0x35, 0x34, 0x45, 0x34, 0x37, 0x32, 0x30, 0x34, 0x39, 0x34, 0x45, 0x32, 0x30, 0x34, 0x33, 0x36, 0x38, 0x37, 0x32, 0x36, 0x46, 0x36, 0x44, 0x36, 0x31, 0x37, 0x33, 0x37, 0x33, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x34, 0x33, 0x36, 0x38, 0x37, 0x32, 0x36, 0x46, 0x35, 0x41, 0x36, 0x35, 0x36, 0x45, 0x32, 0x30, 0x32, 0x38, 0x33, 0x32, 0x32, 0x30, 0x36, 0x39, 0x36, 0x45, 0x36, 0x41, 0x32, 0x45, 0x32, 0x39, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x32, 0x30, 0x34, 0x30, 0x31, 0x42, 0x38, 0x30, 0x34, 0x30, 0x31, 0x42, 0x38, 0x30, 0x30, 0x30, 0x30, 0x30, 0x31, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x41, 0x30, 0x30, 0x30, 0x31, 0x30, 0x31, 0x30, 0x31, 0x30, 0x30, 0x30, 0x31, 0x41, 0x45, 0x30, 0x30, 0x30, 0x31, 0x35, 0x45, 0x30, 0x31, 0x30, 0x30, 0x30, 0x30, 0x30, 0x35, 0x45, 0x38, 0x30, 0x30, 0x30, 0x30, 0x36, 0x31, 0x41, 0x38, 0x30, 0x30, 0x30, 0x30, 0x30, 0x38, 0x42, 0x45, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x37, 0x41, 0x0D,
@@ -537,7 +535,7 @@ void HT3X00AsManager_Test1()
     // XHt3000CmdReadInformation
     byte buffer3[] = { 0x24, 0x30, 0x33, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x32, 0x36, 0x31, 0x45, 0x30, 0x31, 0x33, 0x30, 0x33, 0x32, 0x32, 0x45, 0x33, 0x30, 0x33, 0x36, 0x42, 0x30, 0x30, 0x37, 0x46, 0x30, 0x30, 0x46, 0x37, 0x34, 0x0D };
     manager.onReadable(nullptr, buffer3, sizeof(buffer3));
-    
+
     // 2번째 Packet 의 STX 제거
     byte buffer4[] =
     {

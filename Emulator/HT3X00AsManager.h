@@ -44,18 +44,11 @@ private:
 
     enum WORK_ID
     {
-        WORK_START = 0,
-        WORK_INJECTION,
-        WORK_STANDBY,
+        WORK_START = 0,   
+        WORK_ACTIVATE,
         WORK_ABORT_INJECT,
-        WORK_SINGLE_INJECT,
-        WORK_SINGLE_WAIT_GC4READY,
-        WORK_SINGLE_DRAW_SAMPLE,        
-        WORK_SINGLE_BUBBLE_REMOVE,
-        WORK_SINGLE_INJECT_FRONT,
-        WORK_SINGLE_EMIT_SAMPLE_INSTANT,
-        WORK_SINGLE_RETURN_STANDBY,
-        WORK_SINGLE_POST_WASH,
+        WORK_SINGLE_INJECT,        
+        WORK_ERROR,
         WORK_END = 30,
     };
     std::mt19937        m_gen;
@@ -63,10 +56,6 @@ private:
     struct WORK_INFO
     {
         int     id = 0;
-        int     ms = 1000;          // 실행 주기
-        bool    call_once = false;  // 한번만 호출할지 여부
-
-        chrono_tp    check_time;
         std::function<int(void)> work;
     };
 
@@ -77,7 +66,7 @@ private:
     std::atomic<bool>    m_thread_run;
 
 private:
-    void AddWork(int id, int ms, bool call_once, const std::function<int(void)>& work);
+    void AddWork(int id, const std::function<int(void)>& work);
     void AddWork(WORK_INFO& work_info);
     void ProcWork();
     void DeleteAllWork();
@@ -87,6 +76,7 @@ private:
     std::string GetStatusName(BYTE status);
     std::string GetStatusName(XHt3000Status1Code status);
 
+    int Sleep(int ms);
     int SetStatus(XHt3000Status1Code status1);
     int SetStatusNew(XHt3000Status1NewCode status1_new);
     int SetStatus2(XHt3000Status1Code status1, XHt3000Status1NewCode status1_new);
