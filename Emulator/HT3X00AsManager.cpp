@@ -154,7 +154,7 @@ void HT3X00AsManager::ProcWork()
     do
     {
         m_work_event.Wait();
-        LOGI << fmt::format("Start wake up work thread... work count[{}]", m_works.size());
+        //LOGI << fmt::format("Start wake up work thread... work count[{}]", m_works.size());
 
         auto it = m_works.begin();
         while (m_thread_run == true && it != m_works.end())
@@ -164,7 +164,7 @@ void HT3X00AsManager::ProcWork()
             if (work_info.work != nullptr)
             {
                 work_info.work();
-                LOGI << fmt::format("work was performed in thread... id[{}]", work_info.id);
+                //LOGI << fmt::format("work was performed in thread... id[{}]", work_info.id);
 
                 // Lock
                 {
@@ -174,7 +174,7 @@ void HT3X00AsManager::ProcWork()
             }
         }
 
-        LOGI << fmt::format("End wake up work thread... work count[{}]", m_works.size());
+        //LOGI << fmt::format("End wake up work thread... work count[{}]", m_works.size());
 
     } while (true == m_thread_run);
 
