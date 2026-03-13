@@ -96,8 +96,13 @@ int HT3X00AsManager::PostUpdateMessage()
 
 int HT3X00AsManager::Sleep(int ms)
 {
-    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
-    return 0;
+    // 기존
+    // std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+
+    // 변경 - Deactivate()에서 WakeUp() 시 즉시 탈출
+    m_work_event.Wait(ms);
+
+    return m_thread_run ? 0 : -1;    
 }
 
 void HT3X00AsManager::SetError(XHt3000Status1NewCode status1_new)
@@ -167,7 +172,11 @@ void HT3X00AsManager::ProcWork()
             }
 
             if (work_info.work != nullptr)
-                work_info.work();
+            {
+                int ret = work_info.work();
+                if (ret < 0)  // Sleep이 WakeUp으로 중단된 경우
+                    break;
+            }
         }        
 
     } while (true == m_thread_run);
