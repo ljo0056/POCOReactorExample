@@ -291,8 +291,9 @@ void CPOCOReactorServer::ThreadLoop()
 
     try
     {
-        Poco::Timespan timeout(10, 0);
-        m_reactor = std::make_unique<Poco::Net::SocketReactor>(timeout);
+        //Poco::Timespan timeout(10, 0);
+        //m_reactor = std::make_unique<Poco::Net::SocketReactor>(timeout);
+        m_reactor = std::make_unique<Poco::Net::SocketReactor>();
         m_server_socket = std::make_unique<Poco::Net::ServerSocket>(m_port);
         m_acceptor = std::make_unique<CPOCOServerAcceptor>(*m_server_socket, *m_reactor, m_creator);
 

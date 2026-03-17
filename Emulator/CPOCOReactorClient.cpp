@@ -292,8 +292,9 @@ void CPOCOReactorClient::ThreadLoop()
 	try
 	{
 		Poco::Net::SocketAddress sa(m_ip_address, m_port);
-		Poco::Timespan timeout(10, 0);
-		m_reactor = std::make_unique<Poco::Net::SocketReactor>(timeout);
+		//Poco::Timespan timeout(10, 0);
+		//m_reactor = std::make_unique<Poco::Net::SocketReactor>(timeout);
+		m_reactor = std::make_unique<Poco::Net::SocketReactor>();
 		m_connector = std::make_unique<CPOCOClientConnector>(sa, *m_reactor, m_creator);
 
 		m_reactor->run();		
